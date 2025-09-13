@@ -1,0 +1,11 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import ColorWheel from './ColorWheel';
+export default function RightPanel({ color, setColor, size, setSize, mirror, setMirror, grid, setGrid, onImport, onExport, onCopy }) {
+    function handleFile(e) {
+        const f = e.target.files?.[0];
+        if (f)
+            onImport(f);
+        e.currentTarget.value = '';
+    }
+    return (_jsxs("div", { className: "fixed right-4 top-20 w-[280px] flex flex-col gap-3", children: [_jsxs("div", { className: "neon-card p-3", children: [_jsx("div", { className: "font-semibold mb-2", children: "Farbe" }), _jsx(ColorWheel, { color: color, onChange: setColor }), _jsxs("div", { className: "flex items-center gap-2 mt-3", children: [_jsx("span", { className: "label", children: "Aktuell" }), _jsx("input", { className: "input", type: "color", value: color, onChange: e => setColor(e.target.value) }), _jsx("span", { className: "text-xs", children: color })] }), _jsxs("div", { className: "mt-3", children: [_jsxs("label", { className: "label", children: ["Pinselgr\u00F6\u00DFe: ", size, "px"] }), _jsx("input", { className: "w-full", type: "range", min: 1, max: 12, value: size, onChange: e => setSize(parseInt(e.target.value)) })] }), _jsxs("div", { className: "flex items-center gap-3 mt-2", children: [_jsxs("label", { className: "label flex items-center gap-2", children: [_jsx("input", { type: "checkbox", checked: mirror, onChange: e => setMirror(e.target.checked) }), " Mirror"] }), _jsxs("label", { className: "label flex items-center gap-2", children: [_jsx("input", { type: "checkbox", checked: grid, onChange: e => setGrid(e.target.checked) }), " Grid"] })] })] }), _jsxs("div", { className: "neon-card p-3", children: [_jsx("div", { className: "font-semibold mb-2", children: "Import / Export" }), _jsx("input", { id: "file", type: "file", accept: "image/png", className: "hidden", onChange: handleFile }), _jsx("label", { htmlFor: "file", className: "btn cursor-pointer", children: "Import PNG" }), _jsxs("div", { className: "flex gap-2 mt-2", children: [_jsx("button", { className: "btn", onClick: onExport, children: "Download" }), _jsx("button", { className: "btn-ghost", onClick: onCopy, children: "Copy" })] })] })] }));
+}
