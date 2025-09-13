@@ -1,24 +1,25 @@
-import { useEffect, useRef } from 'react';
-import { SkinViewer } from 'skinview3d';
+import React, { useRef } from "react";
+import TextureCanvas from "./TextureCanvas";
+import Viewer3D from "./Viewer3D";
 
-export default function Preview3D({ getPNG }: { getPNG: ()=>Promise<Blob> }){
-  const ref = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<SkinViewer|null>(null);
-  useEffect(()=>{
-    if (!ref.current) return;
-    const v = new SkinViewer({ width: ref.current.clientWidth, height: 360 });
-    ref.current.appendChild(v.canvas);
-    v.background = '#0b0b17';
-    v.autoRotate = true;
-    v.controls.enableZoom = true;
-    viewerRef.current = v;
-    const timer = setInterval(async ()=>{
-      const blob = await getPNG(); const url = URL.createObjectURL(blob);
-      v.loadSkin(url); setTimeout(()=>URL.revokeObjectURL(url), 4000);
-    }, 800);
-    const onResize = ()=>{ if(!ref.current) return; v.width = ref.current.clientWidth; v.height = 360; };
-    window.addEventListener('resize', onResize);
-    return ()=>{ clearInterval(timer); window.removeEventListener('resize', onResize); v.dispose(); };
-  },[]);
-  return <div ref={ref} className="neon-card p-2"></div>;
-}
+const Preview3D: React.FC = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  return (
+    <div className="flex gap-6 p-4 bg-neutral-900 text-white min-h-screen">
+      {/* Links: 2D Editor */}
+      <div className="flex-1">
+        <h2 className="mb-2">2D Editor</h2>
+        <TextureCanvas ref={canvasRef} />
+      </div>
+
+      {/* Rechts: 3D Preview */}
+      <div className="w-[400px]">
+        <h2 className="mb-2">3D Preview</h2>
+        <Viewer3D canvas={canvasRef.current || undefined} model="default" />
+      </div>
+    </div>
+  );
+};
+
+export default Preview3D;

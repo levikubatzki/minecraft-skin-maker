@@ -1,68 +1,97 @@
-import { useEffect, useRef, useState } from 'react';
-import './styles.css';
-import { Tool } from './types';
-import { UndoRedo } from './lib/history';
-import { W,H, blank, clone, download, copyToClipboard, toBlob, loadPNGFromFile, makeDefaultSteve } from './lib/skin';
-import ToolRail from './components/ToolRail';
-import RightPanel from './components/RightPanel';
-import Viewer3D from './components/Viewer3D';
-import TextureCanvas from './components/TextureCanvas';
+import React, { useRef, useState } from "react";
+import TextureCanvas from "./components/TextureCanvas";
+import Viewer3D from "./components/Viewer3D";
+import Toolbar from "./components/Toolbar";
+import { applyGradient } from "./lib/gradient";
+import { clone } from "./lib/skin";
 
-export default function App(){
-  const [tool,setTool]=useState<Tool>('brush');
-  const [color,setColor]=useState('#8A4DFF');
-  const [size,setSize]=useState(2);
-  const [mirror,setMirror]=useState(true);
-  const [grid,setGrid]=useState(true);
+function App() {
+  const textureRef = useRef<HTMLCanvasElement>(null);
 
-  const [img,setImg]=useState<ImageData>(blank());
-  const hist=useRef(new UndoRedo<ImageData>());
+  // States
+  const [tool, setTool] = useState("brush");
+  const [color, setColor] = useState("#6b46c1"); // Standardfarbe: Lila/Neon
+  const [history, setHistory] = useState<ImageData[]>([]);
+  const [redoStack, setRedoStack] = useState<ImageData[]>([]);
 
-  useEffect(()=>{
-    setImg(makeDefaultSteve());
-    hist.current.push(makeDefaultSteve());
-  },[]);
+  // Undo
+  const undo = () => {
+    if (!textureRef.current) return;
+    if (history.length > 0) {
+      const last = history[history.length - 1];
+      const ctx = textureRef.current.getContext("2d");
+      if (ctx) {
+        ctx.putImageData(last, 0, 0);
+        setRedoStack([clone(textureRef.current.getContext("2d")!.getImageData(0, 0, 64, 64)), ...redoStack]);
+        setHistory(history.slice(0, -1));
+      }
+    }
+  };
 
-  useEffect(()=>{
-    const onPick=(e:any)=>{ setColor(e.detail); setTool('brush'); };
-    window.addEventListener('skin-picker', onPick);
-    return ()=>window.removeEventListener('skin-picker', onPick);
-  },[]);
+  // Redo
+  const redo = () => {
+    if (!textureRef.current) return;
+    if (redoStack.length > 0) {
+      const next = redoStack[0];
+      const ctx = textureRef.current.getContext("2d");
+      if (ctx) {
+        ctx.putImageData(next, 0, 0);
+        setHistory([...history, clone(next)]);
+        setRedoStack(redoStack.slice(1));
+      }
+    }
+  };
 
-  function snapshot(){ hist.current.push(clone(img)); }
-  function undo(){ const s=hist.current.undo(); if(s) setImg(clone(s)); }
-  function redo(){ const s=hist.current.redo(); if(s) setImg(clone(s)); }
+  // Gradient Beispiel
+  const applyGradientToCanvas = () => {
+    if (!textureRef.current) return;
+    const ctx = textureRef.current.getContext("2d");
+    if (!ctx) return;
 
-  async function getPNG(): Promise<Blob>{
-    const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d')!; ctx.putImageData(img,0,0); return await toBlob(c);
-  }
-  async function importFile(f: File){ const data=await loadPNGFromFile(f); snapshot(); setImg(data); }
-  function exportPNG(){ const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d')!; ctx.putImageData(img,0,0); download(c,'skin.png'); }
-  async function copyPNG(){ const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d')!; ctx.putImageData(img,0,0); await copyToClipboard(c); }
+    const img = ctx.getImageData(0, 0, 64, 64);
+    const grad = applyGradient(img, {
+      start: "#6b46c1",
+      end: "#00f0ff",
+      angleDeg: 45,
+      dither: true,
+    });
+    ctx.putImageData(grad, 0, 0);
+  };
 
   return (
-    <div className="min-h-screen">
-      {/* Tools left */}
-      <ToolRail tool={tool} setTool={setTool} onUndo={undo} onRedo={redo} />
+    <div className="flex gap-4 p-4 bg-neutral-950 text-white min-h-screen">
+      {/* Linke Seite: Toolbar + Canvas */}
+      <div className="flex-1 flex flex-col gap-4">
+        <Toolbar
+          tool={tool}
+          setTool={setTool}
+          undo={undo}
+          redo={redo}
+          color={color}
+          setColor={setColor}
+        />
 
-      {/* Right panel */}
-      <RightPanel
-        color={color} setColor={setColor}
-        size={size} setSize={setSize}
-        mirror={mirror} setMirror={setMirror}
-        grid={grid} setGrid={setGrid}
-        onImport={importFile} onExport={exportPNG} onCopy={copyPNG}
-      />
+        <TextureCanvas
+          ref={textureRef}
+          tool={tool}
+          color={color}
+          onDraw={(img) => setHistory([...history, clone(img)])}
+        />
 
-      {/* Center area */}
-      <div className="pt-16 px-4 lg:px-16">
-        <div className="relative w-full h-[60vh]">
-          <Viewer3D getPNG={getPNG} />
-        </div>
-        <div className="mt-4">
-          <TextureCanvas tool={tool} color={color} size={size} mirror={mirror} grid={grid} img={img} setImg={setImg} onSnapshot={snapshot} />
-        </div>
+        <button
+          onClick={applyGradientToCanvas}
+          className="mt-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 transition"
+        >
+          🎨 Gradient anwenden
+        </button>
+      </div>
+
+      {/* Rechte Seite: 3D-Vorschau */}
+      <div className="w-[400px]">
+        <Viewer3D canvas={textureRef.current || undefined} model="default" />
       </div>
     </div>
   );
 }
+
+export default App;
