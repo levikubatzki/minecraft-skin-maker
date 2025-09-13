@@ -1,10 +1,9 @@
-# Minecraft Skin Maker — Pro
-- Klar strukturierter Editor (wie skinmc)
-- Links: Werkzeuge, Farben, Größe, Mirror, Grid, Layer
-- Mitte: Großes Pixel-Canvas mit Zoom & Body-Guides
-- Rechts: 3D-Vorschau (skinview3d)
-- PNG Import/Export, Copy
-- Startet mit einfachem Steve-ähnlichen Default
+# Skin Editor — Neon (SkinMC-like)
+- Layout: Tools links, 3D in der Mitte, Farben/Import rechts
+- Pixel-Canvas mit Zoom, Mirror, Grid
+- Live 3D Vorschau mit skinview3d
+- Import/Export PNG
+- Default Steve beim Start
 
 ## Dev
 ```bash

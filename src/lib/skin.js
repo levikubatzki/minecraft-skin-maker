@@ -1,41 +1,73 @@
-export const SKIN_W = 64;
-export const SKIN_H = 64;
-export async function loadSkinFromFile(file) {
-    return new Promise((res, rej) => {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => { URL.revokeObjectURL(url); res(img); };
-        img.onerror = rej;
-        img.src = url;
-    });
+// Standard Minecraft Skin Maße
+export const W = 64, H = 64;
+export const SKIN_W = W;
+export const SKIN_H = H;
+export function blank() {
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    return ctx.getImageData(0, 0, W, H);
 }
-export function downloadCanvasPNG(canvas, name = 'skin.png') {
-    const url = canvas.toDataURL('image/png');
+export function clone(img) {
+    return new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
+}
+export function toBlob(canvas) {
+    return new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
+}
+export function download(canvas, name = 'skin.png') {
     const a = document.createElement('a');
-    a.href = url;
+    a.href = canvas.toDataURL('image/png');
     a.download = name;
     a.click();
 }
-export async function copyCanvasToClipboard(canvas) {
-    const blob = await new Promise(r => canvas.toBlob(b => r(b), 'image/png'));
-    if (!blob)
-        throw new Error('Blob failed');
-    const item = new ClipboardItem({ 'image/png': blob });
+export async function copyToClipboard(canvas) {
+    const b = await toBlob(canvas);
+    const item = new ClipboardItem({ 'image/png': b });
     await navigator.clipboard.write([item]);
 }
-export function imageDataFromCanvas(canvas) {
-    const ctx = canvas.getContext('2d');
-    return ctx.getImageData(0, 0, canvas.width, canvas.height);
+export async function loadPNGFromFile(file) {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    await new Promise((res, rej) => {
+        img.onload = () => res();
+        img.onerror = rej;
+        img.src = url;
+    });
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, W, H);
+    URL.revokeObjectURL(url);
+    return ctx.getImageData(0, 0, W, H);
 }
-export function putImageDataToCanvas(canvas, img) {
-    const ctx = canvas.getContext('2d');
-    ctx.putImageData(img, 0, 0);
-}
-export function createEmptySkin() {
-    const canvas = document.createElement('canvas');
-    canvas.width = SKIN_W;
-    canvas.height = SKIN_H;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, SKIN_W, SKIN_H);
-    return ctx.getImageData(0, 0, SKIN_W, SKIN_H);
+// simple Steve-like generator (not exact, but good default)
+export function makeDefaultSteve() {
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#7AA1FF';
+    ctx.fillRect(0, 0, W, H); // base bluish
+    // head area (8x8 blocks): draw a face box
+    ctx.fillStyle = '#C58C5A';
+    ctx.fillRect(8, 8, 8, 8); // front head
+    ctx.fillStyle = '#000';
+    ctx.fillRect(10, 11, 2, 2);
+    ctx.fillRect(14, 11, 2, 2); // eyes
+    ctx.fillStyle = '#8B5E3C';
+    ctx.fillRect(10, 14, 6, 1); // mouth
+    // body box
+    ctx.fillStyle = '#3AA3A3';
+    ctx.fillRect(16, 20, 8, 12);
+    // quick arms + legs blocks
+    ctx.fillStyle = '#3AA3A3';
+    ctx.fillRect(40, 20, 4, 12);
+    ctx.fillRect(48, 20, 4, 12);
+    ctx.fillStyle = '#6B4F2A';
+    ctx.fillRect(8, 52, 4, 12);
+    ctx.fillRect(20, 52, 4, 12);
+    return ctx.getImageData(0, 0, W, H);
 }

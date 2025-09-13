@@ -1,3 +1,3 @@
-export type Tool = 'brush' | 'eraser' | 'fill' | 'picker';
-export interface GradientOptions { start:string; end:string; angleDeg:number; dither:boolean; }
-export type Layer = 'base' | 'overlay';
+export type Tool = 'brush'|'eraser'|'fill'|'picker'|'hand';
+export type Layer = 'base'|'overlay';
+export interface AppState { color: string; size: number; tool: Tool; mirror: boolean; grid: boolean; layer: Layer; }

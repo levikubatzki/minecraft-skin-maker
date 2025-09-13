@@ -1,49 +1,38 @@
-export function floodFill(img, x, y, color) {
+export function floodFill(img, x, y, c) {
     const { width, height, data } = img;
     const idx = (x, y) => (y * width + x) * 4;
-    if (x < 0 || x >= width || y < 0 || y >= height)
+    if (x < 0 || y < 0 || x >= width || y >= height)
         return;
-    const start = idx(x, y);
-    const target = [data[start], data[start + 1], data[start + 2], data[start + 3]];
-    if (equals(target, color))
+    const s = idx(x, y);
+    const t = [data[s], data[s + 1], data[s + 2], data[s + 3]];
+    if (eq4(t, c))
         return;
     const q = [[x, y]];
     while (q.length) {
         const [cx, cy] = q.pop();
         let nx = cx;
-        while (nx >= 0 && eqpx(nx, cy, target))
+        while (nx >= 0 && eqpx(nx, cy, t))
             nx--;
         nx++;
-        let spanUp = false, spanDown = false;
-        while (nx < width && eqpx(nx, cy, target)) {
-            setpx(nx, cy, color);
-            if (!spanUp && cy > 0 && eqpx(nx, cy - 1, target)) {
+        let up = false, down = false;
+        while (nx < width && eqpx(nx, cy, t)) {
+            setpx(nx, cy, c);
+            if (!up && cy > 0 && eqpx(nx, cy - 1, t)) {
                 q.push([nx, cy - 1]);
-                spanUp = true;
+                up = true;
             }
-            else if (spanUp && cy > 0 && !eqpx(nx, cy - 1, target))
-                spanUp = false;
-            if (!spanDown && cy < height - 1 && eqpx(nx, cy + 1, target)) {
+            else if (up && cy > 0 && !eqpx(nx, cy - 1, t))
+                up = false;
+            if (!down && cy < height - 1 && eqpx(nx, cy + 1, t)) {
                 q.push([nx, cy + 1]);
-                spanDown = true;
+                down = true;
             }
-            else if (spanDown && cy < height - 1 && !eqpx(nx, cy + 1, target))
-                spanDown = false;
+            else if (down && cy < height - 1 && !eqpx(nx, cy + 1, t))
+                down = false;
             nx++;
         }
     }
-    function eqpx(x, y, c) {
-        const i = idx(x, y);
-        return data[i] === c[0] && data[i + 1] === c[1] && data[i + 2] === c[2] && data[i + 3] === c[3];
-    }
-    function setpx(x, y, c) {
-        const i = idx(x, y);
-        data[i] = c[0];
-        data[i + 1] = c[1];
-        data[i + 2] = c[2];
-        data[i + 3] = c[3];
-    }
-    function equals(a, b) {
-        return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
-    }
+    function eqpx(x, y, t) { const i = idx(x, y); return data[i] === t[0] && data[i + 1] === t[1] && data[i + 2] === t[2] && data[i + 3] === t[3]; }
+    function setpx(x, y, c) { const i = idx(x, y); data[i] = c[0]; data[i + 1] = c[1]; data[i + 2] = c[2]; data[i + 3] = c[3]; }
+    function eq4(a, b) { return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3]; }
 }
