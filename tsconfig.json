@@ -9,7 +9,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-    "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "types": ["vite/client"]
   },

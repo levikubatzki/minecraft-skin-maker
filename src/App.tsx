@@ -1,153 +1,119 @@
-import { useEffect, useRef, useState } from "react";
-import "./styles.css";
-import Toolbar from "./components/Toolbar";
-import GradientPanel from "./components/GradientPanel";
-import CanvasEditor from "./components/CanvasEditor";
-import Preview3D from "./components/Preview3D";
-import Toast from "./components/Toast";
-import ImageToSkin from "./components/ImageToSkin";
+import { useEffect, useRef, useState } from 'react';
+import './styles.css';
+import { Tool, Layer } from './types';
+import { UndoRedo } from './lib/history';
+import { W, H, blank, clone, download, copyToClipboard, toBlob, loadPNGFromFile, makeDefaultSteve } from './lib/skin';
+import Sidebar from './components/Sidebar';
+import CanvasPro from './components/CanvasPro';
+import Preview3D from './components/Preview3D';
 
-import { Tool, GradientOptions } from "./types";
-import { UndoRedo } from "./lib/history";
-import { SKIN_W, SKIN_H, createEmptySkin, downloadCanvasPNG, loadSkinFromFile, copyCanvasToClipboard, imageDataFromCanvas, putImageDataToCanvas } from "./lib/skin";
-import { applyGradientToImageData } from "./lib/gradient";
-
-export default function App() {
+export default function App(){
   const [tool, setTool] = useState<Tool>('brush');
   const [color, setColor] = useState('#8A4DFF');
-  const [size, setSize] = useState(4);
-  const [toast, setToast] = useState<string|null>(null);
+  const [size, setSize] = useState(2);
+  const [mirror, setMirror] = useState(true);
+  const [grid, setGrid] = useState(true);
+  const [layer, setLayer] = useState<Layer>('base');
 
-  const [gopt, setGopt] = useState<GradientOptions>({ start:'#6F2BFF', end:'#C5A3FF', angleDeg: 315, dither:true });
+  const [baseImg, setBaseImg] = useState<ImageData>(blank());
+  const [overlayImg, setOverlayImg] = useState<ImageData>(blank());
 
-  const baseCanvasRef = useRef<HTMLCanvasElement>(null);
-  const hist = useRef(new UndoRedo());
+  const hist = useRef(new UndoRedo<{base:ImageData, overlay:ImageData}>());
 
-  useEffect(()=> {
-    const c = baseCanvasRef.current!;
-    c.width = SKIN_W; c.height = SKIN_H;
-    const ctx = c.getContext('2d')!;
-    const img = createEmptySkin();
-    ctx.putImageData(img,0,0);
-    snapshot();
-  }, []);
-
-  useEffect(()=> {
-    const onPick = (e: Event) => {
-      // @ts-ignore
-      setColor(e.detail as string);
-      setTool('brush');
-      setToast('Farbe übernommen');
+  // hotkeys
+  useEffect(()=>{
+    const onKey=(e:KeyboardEvent)=>{
+      if (e.target && (e.target as HTMLElement).tagName === 'INPUT') return;
+      if (e.key==='b' || e.key==='B') setTool('brush');
+      if (e.key==='e' || e.key==='E') setTool('eraser');
+      if (e.key==='f' || e.key==='F') setTool('fill');
+      if (e.key==='p' || e.key==='P') setTool('picker');
+      if (e.key==='g' || e.key==='G') setGrid(g=>!g);
+      if (e.key==='m' || e.key==='M') setMirror(m=>!m);
+      if (e.ctrlKey && e.key==='z') undo();
+      if (e.ctrlKey && e.key==='y') redo();
     };
-    window.addEventListener('skin-picker', onPick as any);
-    return ()=>window.removeEventListener('skin-picker', onPick as any);
+    window.addEventListener('keydown', onKey);
+    return ()=>window.removeEventListener('keydown', onKey);
   },[]);
 
-  function getImageData() { return imageDataFromCanvas(baseCanvasRef.current!); }
-  function setImageData(img: ImageData) { putImageDataToCanvas(baseCanvasRef.current!, img); }
-  function snapshot() {
-    const img = getImageData();
-    const clone = new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
-    hist.current.push(clone);
+  // load default Steve-like on first mount
+  useEffect(()=>{
+    const steve = makeDefaultSteve();
+    setBaseImg(steve);
+    snapshot(steve, overlayImg);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function snapshot(b=baseImg, o=overlayImg){
+    hist.current.push({ base: clone(b), overlay: clone(o) });
+  }
+  function undo(){ const s = hist.current.undo(); if (s){ setBaseImg(clone(s.base)); setOverlayImg(clone(s.overlay)); } }
+  function redo(){ const s = hist.current.redo(); if (s){ setBaseImg(clone(s.base)); setOverlayImg(clone(s.overlay)); } }
+
+  // merge current layers onto a canvas and return blob
+  async function getPNG(): Promise<Blob>{
+    const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d')!;
+    ctx.putImageData(baseImg,0,0); ctx.putImageData(overlayImg,0,0);
+    return await toBlob(c);
   }
 
-  function undo() { const prev = hist.current.undo(); if (prev) { setImageData(prev); setToast('Undo'); } }
-  function redo() { const nxt = hist.current.redo(); if (nxt) { setImageData(nxt); setToast('Redo'); } }
-
-  function applyGradient() {
+  async function importPNG(e: React.ChangeEvent<HTMLInputElement>){
+    const f=e.target.files?.[0]; if(!f) return;
+    const img = await loadPNGFromFile(f);
     snapshot();
-    const img = getImageData();
-    applyGradientToImageData(img, gopt);
-    setImageData(img);
-    setToast('Gradient angewendet');
-  }
-  function randomGradient() {
-    const randHex = ()=> '#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0');
-    setGopt(g=>({ ...g, start: randHex(), end: randHex(), angleDeg: Math.floor(Math.random()*360)}));
+    setBaseImg(img);
+    e.currentTarget.value='';
   }
 
-  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]; if (!f) return;
-    const img = await loadSkinFromFile(f);
-    snapshot();
-    const c = baseCanvasRef.current!;
-    const ctx = c.getContext('2d')!;
-    const off = document.createElement('canvas');
-    off.width = SKIN_W; off.height = SKIN_H;
-    const octx = off.getContext('2d')!;
-    octx.clearRect(0,0,SKIN_W,SKIN_H);
-    octx.drawImage(img, 0,0, SKIN_W, SKIN_H);
-    const data = octx.getImageData(0,0,SKIN_W,SKIN_H);
-    ctx.putImageData(data,0,0);
-    setToast('Skin importiert');
-    e.currentTarget.value = '';
-  }
-
-  function download() { downloadCanvasPNG(baseCanvasRef.current!, 'skin.png'); }
-  async function copyToClipboard() { await copyCanvasToClipboard(baseCanvasRef.current!); setToast('Als Bild in Zwischenablage kopiert'); }
-  async function getPNGBlob(): Promise<Blob> {
-    const canvas = baseCanvasRef.current!;
-    return await new Promise<Blob|null>(r => canvas.toBlob(b=>r(b), 'image/png')).then(b => b!);
-  }
-
-  function applyImageData(img: ImageData){
-    snapshot();
-    setImageData(img);
-    setToast('Bild auf Canvas angewendet');
-  }
+  function exportPNG(){ const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d')!; ctx.putImageData(baseImg,0,0); ctx.putImageData(overlayImg,0,0); download(c,'skin.png'); }
+  async function copyPNG(){ const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d')!; ctx.putImageData(baseImg,0,0); ctx.putImageData(overlayImg,0,0); await copyToClipboard(c); }
 
   return (
-    <div className="min-h-screen p-6">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold tracking-wide" style={{textShadow:'0 0 10px var(--glow)'}}>Minecraft Skin Maker — Neon</h1>
-        <p className="text-neon-100">Gradient · Malen · Undo/Redo · 3D-Vorschau · Import/Export · Bild→Skin</p>
+    <div className="min-h-screen p-5">
+      <header className="mb-4">
+        <h1 className="text-2xl font-bold" style={{textShadow:'0 0 10px var(--glow)'}}>Minecraft Skin Maker — Pro</h1>
+        <p className="text-neon-100">Pixel-Editor · Base/Overlay-Layer · Mirror · Grid · 3D Preview · Import/Export</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <div className="neon-card p-4">
-            <Toolbar
-              tool={tool} setTool={setTool}
-              color={color} setColor={setColor}
-              size={size} setSize={setSize}
-              onUndo={undo} onRedo={redo}
-              canUndo={hist.current.canUndo()} canRedo={hist.current.canRedo()}
-            />
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-3">
+          <Sidebar
+            tool={tool} setTool={setTool}
+            color={color} setColor={setColor}
+            size={size} setSize={setSize}
+            mirror={mirror} setMirror={setMirror}
+            grid={grid} setGrid={setGrid}
+            layer={layer} setLayer={setLayer}
+            onUndo={undo} onRedo={redo}
+            canUndo={hist.current.canUndo()} canRedo={hist.current.canRedo()}
+          />
+        </div>
 
-          <CanvasEditor
-            tool={tool}
-            color={color}
-            size={size}
+        <div className="lg:col-span-6 flex flex-col gap-4">
+          <CanvasPro
+            tool={tool} color={color} size={size}
+            mirror={mirror} grid={grid} layer={layer}
+            baseImg={baseImg} overlayImg={overlayImg}
+            setBaseImg={setBaseImg} setOverlayImg={setOverlayImg}
             onSnapshot={snapshot}
-            getImageData={getImageData}
-            setImageData={setImageData}
           />
 
-          <div className="neon-card p-4 flex flex-wrap gap-3 items-center">
-            <input id="import" type="file" accept="image/png" className="hidden" onChange={handleImport}/>
+          <div className="neon-card p-3 flex flex-wrap gap-3 items-center">
+            <input id="import" type="file" accept="image/png" className="hidden" onChange={importPNG} />
             <label htmlFor="import" className="btn cursor-pointer">Import PNG</label>
-            <button className="btn" onClick={download}>Download PNG</button>
-            <button className="btn-ghost" onClick={copyToClipboard}>Copy als Bild</button>
-            <span className="text-neon-100 text-sm">Format: 64×64 PNG</span>
+            <button className="btn" onClick={exportPNG}>Download PNG</button>
+            <button className="btn-ghost" onClick={copyPNG}>Copy als Bild</button>
+            <span className="text-neon-100 text-xs">Format: 64×64</span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <GradientPanel opt={gopt} setOpt={setGopt} onApply={applyGradient} onRandom={randomGradient}/>
-          <ImageToSkin apply={applyImageData} />
-          <Preview3D getPNG={getPNGBlob}/>
-          <div className="neon-card p-3">
-            <canvas ref={baseCanvasRef} className="w-full rounded-xl2 border border-cyber-edge" style={{imageRendering:'pixelated'}}/>
-            <p className="text-xs text-neon-100 mt-2">Basis-Canvas (64×64). Wird live in 3D übernommen.</p>
-          </div>
+        <div className="lg:col-span-3">
+          <Preview3D getPNG={getPNG} />
         </div>
       </div>
 
-      {toast && <Toast text={toast} onDone={()=>setToast(null)}/>}
-      <footer className="mt-8 text-center text-neon-100 text-xs">
-        Made for <span className="text-neon-300 font-semibold">levikubatzki</span> · React + TS · skinview3d
-      </footer>
+      <footer className="text-center text-neon-100 text-xs mt-6">Made for levikubatzki · React + TS + skinview3d</footer>
     </div>
   );
 }

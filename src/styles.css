@@ -2,23 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { --glow: #7328ff; }
+:root { --glow:#7328ff; }
 
-.neon-card { @apply bg-cyber-panel rounded-xl2 shadow-neon border border-cyber-edge; }
-
-.btn {
-  @apply rounded-xl2 px-3 py-2 bg-neon-400 hover:bg-neon-300 active:bg-neon-500 transition disabled:opacity-40 disabled:cursor-not-allowed;
-  box-shadow: 0 0 10px rgba(115,40,255,.35);
-}
+.neon-card { @apply bg-cyber-panel border border-cyber-edge rounded-xl2 shadow-neon; }
+.toolbar   { @apply neon-card p-3 flex flex-col gap-3; }
+.btn       { @apply rounded-xl2 px-3 py-2 bg-neon-400 hover:bg-neon-300 active:bg-neon-500 transition disabled:opacity-40 disabled:cursor-not-allowed; box-shadow:0 0 10px rgba(115,40,255,.3); }
 .btn-ghost { @apply rounded-xl2 px-3 py-2 bg-transparent border border-cyber-edge hover:bg-cyber-edge transition; }
-.input, .select, .range { @apply bg-cyber-bg border border-cyber-edge rounded-xl2 px-3 py-2 outline-none focus:ring-2 focus:ring-neon-400; }
-.label { @apply text-sm text-neon-100; }
+.input     { @apply bg-cyber-bg border border-cyber-edge rounded-xl2 px-3 py-2 outline-none focus:ring-2 focus:ring-neon-400; }
+.range     { @apply w-full; }
+.label     { @apply text-sm text-neon-100; }
 
-.grid-bg {
-  background-image: linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+.grid-dark {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
   background-size: 16px 16px, 16px 16px;
 }
 
-.fade-in { animation: fade .2s ease-out; }
-@keyframes fade { from { opacity:0; transform: translateY(2px) } to { opacity:1; transform: translateY(0) } }
+.badge { @apply text-xs px-2 py-1 rounded-xl2 border border-cyber-edge; }
+.hotkey { @apply text-[11px] px-1.5 py-0.5 rounded bg-cyber-bg border border-cyber-edge text-neon-100; }

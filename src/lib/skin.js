@@ -1,0 +1,41 @@
+export const SKIN_W = 64;
+export const SKIN_H = 64;
+export async function loadSkinFromFile(file) {
+    return new Promise((res, rej) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); res(img); };
+        img.onerror = rej;
+        img.src = url;
+    });
+}
+export function downloadCanvasPNG(canvas, name = 'skin.png') {
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+}
+export async function copyCanvasToClipboard(canvas) {
+    const blob = await new Promise(r => canvas.toBlob(b => r(b), 'image/png'));
+    if (!blob)
+        throw new Error('Blob failed');
+    const item = new ClipboardItem({ 'image/png': blob });
+    await navigator.clipboard.write([item]);
+}
+export function imageDataFromCanvas(canvas) {
+    const ctx = canvas.getContext('2d');
+    return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+export function putImageDataToCanvas(canvas, img) {
+    const ctx = canvas.getContext('2d');
+    ctx.putImageData(img, 0, 0);
+}
+export function createEmptySkin() {
+    const canvas = document.createElement('canvas');
+    canvas.width = SKIN_W;
+    canvas.height = SKIN_H;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, SKIN_W, SKIN_H);
+    return ctx.getImageData(0, 0, SKIN_W, SKIN_H);
+}

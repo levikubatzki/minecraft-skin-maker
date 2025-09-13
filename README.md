@@ -1,25 +1,18 @@
-# Minecraft Skin Maker — Neon (Full)
+# Minecraft Skin Maker — Pro
+- Klar strukturierter Editor (wie skinmc)
+- Links: Werkzeuge, Farben, Größe, Mirror, Grid, Layer
+- Mitte: Großes Pixel-Canvas mit Zoom & Body-Guides
+- Rechts: 3D-Vorschau (skinview3d)
+- PNG Import/Export, Copy
+- Startet mit einfachem Steve-ähnlichen Default
 
-Ein moderner **Minecraft Skin Maker** mit:
-- Canvas-Editor (Brush/Eraser/Fill/Pipette, Zoom, Pan, Grid)
-- Gradient-Generator (2 Farben, Winkel, Dithering, Zufall)
-- Undo/Redo
-- PNG Import/Export & Copy-to-Clipboard
-- 3D-Vorschau (skinview3d)
-- Bild → Skin Konverter (beliebiges Bild zu 64×64, Cover/Contain)
-
-## Lokal
-
+## Dev
 ```bash
 npm install
 npm run dev
 ```
-
 ## Deploy (GitHub Pages)
-
 ```bash
 npm run build
 npm run deploy
 ```
-
-`vite.config.ts` hat `base: '/minecraft-skin-maker/'` für GitHub Pages.
