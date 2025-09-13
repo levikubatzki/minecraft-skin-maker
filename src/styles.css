@@ -2,7 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background: #0b0b17;
-  color: white;
+:root { --glow: #7328ff; }
+
+.neon-card { @apply bg-cyber-panel rounded-xl2 shadow-neon border border-cyber-edge; }
+
+.btn {
+  @apply rounded-xl2 px-3 py-2 bg-neon-400 hover:bg-neon-300 active:bg-neon-500 transition disabled:opacity-40 disabled:cursor-not-allowed;
+  box-shadow: 0 0 10px rgba(115,40,255,.35);
 }
+.btn-ghost { @apply rounded-xl2 px-3 py-2 bg-transparent border border-cyber-edge hover:bg-cyber-edge transition; }
+.input, .select, .range { @apply bg-cyber-bg border border-cyber-edge rounded-xl2 px-3 py-2 outline-none focus:ring-2 focus:ring-neon-400; }
+.label { @apply text-sm text-neon-100; }
+
+.grid-bg {
+  background-image: linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px;
+}
+
+.fade-in { animation: fade .2s ease-out; }
+@keyframes fade { from { opacity:0; transform: translateY(2px) } to { opacity:1; transform: translateY(0) } }
