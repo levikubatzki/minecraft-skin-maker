@@ -1,33 +1,55 @@
-export const W=64, H=64;
+// Standard Minecraft Skin Maße
+export const W = 64, H = 64;
+export const SKIN_W = W;
+export const SKIN_H = H;
 
 export function blank(): ImageData {
-  const c=document.createElement('canvas'); c.width=W; c.height=H;
-  const ctx=c.getContext('2d')!; ctx.clearRect(0,0,W,H); return ctx.getImageData(0,0,W,H);
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d')!;
+  ctx.clearRect(0,0,W,H);
+  return ctx.getImageData(0,0,W,H);
 }
 
-export function clone(img: ImageData){ return new ImageData(new Uint8ClampedArray(img.data), img.width, img.height); }
+export function clone(img: ImageData){
+  return new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
+}
 
 export function toBlob(canvas: HTMLCanvasElement): Promise<Blob>{
-  return new Promise(res=>canvas.toBlob(b=>res(b!),'image/png'));
+  return new Promise(res => canvas.toBlob(b => res(b!), 'image/png'));
 }
 
 export function download(canvas: HTMLCanvasElement, name='skin.png'){
-  const a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.download=name; a.click();
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = name;
+  a.click();
 }
 
 export async function copyToClipboard(canvas: HTMLCanvasElement){
-  const b=await toBlob(canvas); const item=new ClipboardItem({'image/png':b}); await navigator.clipboard.write([item]);
+  const b = await toBlob(canvas);
+  const item = new ClipboardItem({'image/png': b});
+  await navigator.clipboard.write([item]);
 }
 
 export async function loadPNGFromFile(file: File): Promise<ImageData>{
-  const url=URL.createObjectURL(file); const img=new Image(); await new Promise<void>((res,rej)=>{ img.onload=()=>res(); img.onerror=rej; img.src=url; });
-  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d')!; ctx.drawImage(img,0,0,W,H);
-  URL.revokeObjectURL(url); return ctx.getImageData(0,0,W,H);
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  await new Promise<void>((res,rej)=>{
+    img.onload=()=>res();
+    img.onerror=rej;
+    img.src=url;
+  });
+  const c = document.createElement('canvas'); c.width=W; c.height=H;
+  const ctx = c.getContext('2d')!;
+  ctx.drawImage(img,0,0,W,H);
+  URL.revokeObjectURL(url);
+  return ctx.getImageData(0,0,W,H);
 }
 
 // simple Steve-like generator (not exact, but good default)
 export function makeDefaultSteve(): ImageData {
-  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d')!;
+  const c = document.createElement('canvas'); c.width=W; c.height=H;
+  const ctx = c.getContext('2d')!;
   ctx.fillStyle='#7AA1FF'; ctx.fillRect(0,0,W,H); // base bluish
   // head area (8x8 blocks): draw a face box
   ctx.fillStyle='#C58C5A'; ctx.fillRect(8,8,8,8); // front head
